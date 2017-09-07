@@ -36,6 +36,8 @@ export const ActionTypes = {
  * @returns {Store} A Redux store that lets you read the state, dispatch actions
  * and subscribe to changes.
  */
+//整个createStore函数其实就是一个闭包，通过返回内部函数的方式来修改闭包内部的局部变量，其中最重要的2个局部变量就是currentState，以及listeners
+//一个是当前的结果状态，一个是当前注册过的函数（每次dispatch的时候，全部listeners都会执行一遍）
 export default function createStore(reducer, preloadedState, enhancer) {
   //如果preloadedState是个函数，并且，没有第三个参数，那么，第二个参数就是enhancer， 并且preloadedState未传入，即undefined
   if (typeof preloadedState === 'function' && typeof enhancer === 'undefined') {
