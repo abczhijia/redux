@@ -1,4 +1,4 @@
-import { ActionTypes } from './createStore'
+import {ActionTypes} from './createStore'
 import isPlainObject from 'lodash/isPlainObject'
 import warning from './utils/warning'
 
@@ -54,10 +54,11 @@ function getUnexpectedStateShapeWarningMessage(inputState, reducers, action, une
   }
 }
 
+//确认reducer是否是合法的reducer，即返回的state是不是undefined，如果是undefined，则是非法reducer
 function assertReducerShape(reducers) {
   Object.keys(reducers).forEach(key => {
     const reducer = reducers[key]
-    const initialState = reducer(undefined, { type: ActionTypes.INIT })
+    const initialState = reducer(undefined, {type: ActionTypes.INIT})
 
     if (typeof initialState === 'undefined') {
       throw new Error(
@@ -70,7 +71,7 @@ function assertReducerShape(reducers) {
     }
 
     const type = '@@redux/PROBE_UNKNOWN_ACTION_' + Math.random().toString(36).substring(7).split('').join('.')
-    if (typeof reducer(undefined, { type }) === 'undefined') {
+    if (typeof reducer(undefined, {type}) === 'undefined') {
       throw new Error(
         `Reducer "${key}" returned undefined when probed with a random type. ` +
         `Don't try to handle ${ActionTypes.INIT} or other actions in "redux/*" ` +
@@ -100,6 +101,7 @@ function assertReducerShape(reducers) {
  * passed object, and builds a state object with the same shape.
  */
 export default function combineReducers(reducers) {
+  //从reducers对象里面取出keys列表
   const reducerKeys = Object.keys(reducers)
   const finalReducers = {}
   for (let i = 0; i < reducerKeys.length; i++) {
@@ -110,11 +112,13 @@ export default function combineReducers(reducers) {
         warning(`No reducer provided for key "${key}"`)
       }
     }
-
+    //过滤出reducers对应的value值是function的key，将其放入finalReducers对象
     if (typeof reducers[key] === 'function') {
       finalReducers[key] = reducers[key]
     }
   }
+
+  //取出过滤出来的有效的keys列表
   const finalReducerKeys = Object.keys(finalReducers)
 
   let unexpectedKeyCache
@@ -129,6 +133,8 @@ export default function combineReducers(reducers) {
     shapeAssertionError = e
   }
 
+  //combineReducers的返回值其实也是一个reducer函数，该函数参数同样是state和action
+  //参数state其实就是currState
   return function combination(state = {}, action) {
     if (shapeAssertionError) {
       throw shapeAssertionError
@@ -142,7 +148,11 @@ export default function combineReducers(reducers) {
     }
 
     let hasChanged = false
+    //定义新的nextState
     const nextState = {}
+    // 1，遍历reducers对象中的有效key，
+    // 2，执行该key对应的value函数，即子reducer函数，并得到对应的state对象，即子state
+    // 3，将新的子state挂到新的nextState对象上，key不变
     for (let i = 0; i < finalReducerKeys.length; i++) {
       const key = finalReducerKeys[i]
       const reducer = finalReducers[key]
@@ -153,8 +163,10 @@ export default function combineReducers(reducers) {
         throw new Error(errorMessage)
       }
       nextState[key] = nextStateForKey
+      //如果hasChanged为true，那就是true了   后面的判断是，只要有一次nextStateForKey!== previousStateForKey不同，就说明整个state不同
       hasChanged = hasChanged || nextStateForKey !== previousStateForKey
     }
+    //如果state发生变化了，直接返回新的nextState，否则，还是返回旧的state
     return hasChanged ? nextState : state
   }
 }
